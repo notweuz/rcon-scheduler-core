@@ -1,10 +1,10 @@
-package client
+package source
 
 import (
 	"errors"
 	"fmt"
-	iRcon "rcon-scheduler-core/internal/rcon"
-	"rcon-scheduler-core/internal/server"
+	iRcon "rcon-scheduler-core/rcon"
+	"rcon-scheduler-core/server"
 	"time"
 
 	"github.com/gorcon/rcon"
@@ -55,7 +55,7 @@ func (s *Source) Disconnect() {
 
 func (s *Source) Execute(cmd string) (string, error) {
 	if s.conn == nil {
-		return "", ErrNotConnected
+		return "", iRcon.ErrNotConnected
 	}
 
 	response, err := s.conn.Execute(cmd)

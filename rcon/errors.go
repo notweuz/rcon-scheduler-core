@@ -1,4 +1,4 @@
-package client
+package rcon
 
 import "errors"
 

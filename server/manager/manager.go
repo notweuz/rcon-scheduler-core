@@ -2,9 +2,9 @@ package manager
 
 import (
 	"fmt"
-	"rcon-scheduler-core/internal/rcon"
-	"rcon-scheduler-core/internal/rcon/client"
-	"rcon-scheduler-core/internal/server"
+	"rcon-scheduler-core/rcon"
+	"rcon-scheduler-core/rcon/source"
+	"rcon-scheduler-core/server"
 
 	"github.com/rs/zerolog/log"
 )
@@ -23,16 +23,16 @@ func (m *Manager) Register(srv server.Server) {
 	log.Info().Str("type", string(srv.Type)).Str("address", fmt.Sprintf("%v:%d", srv.Address, srv.Port)).Msg("register new server")
 
 	key := server.ServerKey{
-        Address: srv.Address,
-        Port:    srv.Port,
-    }
+		Address: srv.Address,
+		Port:    srv.Port,
+	}
 
 	switch srv.Type {
 	case server.TypeSource:
-		m.Clients[key] = client.NewSource(srv)
+		m.Clients[key] = source.NewSource(srv)
 	default:
 		log.Warn().Str("type", string(srv.Type)).Msg("unexpected type, fallback to source")
-		m.Clients[key] = client.NewSource(srv)
+		m.Clients[key] = source.NewSource(srv)
 	}
 }
 
@@ -40,9 +40,9 @@ func (m *Manager) Unregister(srv server.Server) {
 	log.Info().Str("type", string(srv.Type)).Str("address", fmt.Sprintf("%v:%d", srv.Address, srv.Port)).Msg("unregistering server")
 
 	key := server.ServerKey{
-        Address: srv.Address,
-        Port:    srv.Port,
-    }
+		Address: srv.Address,
+		Port:    srv.Port,
+	}
 
 	delete(m.Clients, key)
 }

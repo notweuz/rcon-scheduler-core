@@ -1,6 +1,6 @@
 package server
 
-import "rcon-scheduler-core/internal/scheduler/job"
+import "rcon-scheduler-core/scheduler/job"
 
 type ServerKey struct {
 	Address string
