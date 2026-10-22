@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
+	"github.com/go-co-op/gocron/v2"
 	"github.com/notweuz/rcon-scheduler-core/rcon"
 	"github.com/notweuz/rcon-scheduler-core/rcon/source"
 	"github.com/notweuz/rcon-scheduler-core/server"
@@ -14,13 +16,35 @@ import (
 var (
 	ErrUnsupportedType = errors.New("unsupported server type")
 	ErrServerExists    = errors.New("same server already exist")
+	ErrServerNotFound  = errors.New("server not found")
 )
 
 type Scheduler struct {
 	clients map[server.Key]rcon.Client
+	cron    gocron.Scheduler
 	logger  *slog.Logger
 
 	mu sync.RWMutex
+}
+
+func New(opts ...Option) (*Scheduler, error) {
+	o := options{
+		location: time.UTC,
+		logger: slog.New(slog.DiscardHandler),
+	}
+	for _, opt := range opts {
+		opt(&o)
+	}
+
+	c, err := gocron.NewScheduler(gocron.WithLocation(o.location))
+	if err != nil {
+		return nil, fmt.Errorf("create cron scheduler: %w", err)
+	}
+	return &Scheduler{
+		cron: c,
+		logger: o.logger,
+		clients: make(map[server.Key]rcon.Client),
+	}, nil
 }
 
 func (s *Scheduler) Register(srv server.Server) error {
@@ -45,6 +69,23 @@ func (s *Scheduler) Register(srv server.Server) error {
 	return nil
 }
 
+func (s *Scheduler) Unregister(key server.Key) error {
+	s.mu.Lock()
+	client, ok := s.clients[key]
+	if !ok {
+		s.mu.Unlock()
+		return fmt.Errorf("server %s not found: %w", key.String(), ErrServerNotFound)
+	}
+	delete(s.clients, key)
+	s.mu.Unlock()
+
+	s.cron.RemoveByTags(key.String())
+	client.Disconnect()
+
+	s.logger.Info("server removed", "server", key.String())
+	return nil
+}
+
 func (s *Scheduler) newClient(srv server.Server) (rcon.Client, error) {
 	clientLogger := s.logger.With("server", srv.Key().String())
 	switch srv.Type {
@@ -53,4 +94,19 @@ func (s *Scheduler) newClient(srv server.Server) (rcon.Client, error) {
 	default:
 		return nil, fmt.Errorf("%w: %q", ErrUnsupportedType, srv.Type)
 	}
+}
+
+func (s *Scheduler) Start() {
+	s.cron.Start()
+}
+
+func (s *Scheduler) Shutdown() error {
+	err := s.cron.Shutdown()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, c := range s.clients {
+		c.Disconnect()
+	}
+	return err
 }
