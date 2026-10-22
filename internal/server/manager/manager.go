@@ -10,25 +10,39 @@ import (
 )
 
 type Manager struct {
-	Clients map[server.Server]rcon.Client
+	Clients map[server.ServerKey]rcon.Client
 }
 
 func New() *Manager {
-	return &Manager{}
+	return &Manager{
+		Clients: make(map[server.ServerKey]rcon.Client),
+	}
 }
 
 func (m *Manager) Register(srv server.Server) {
 	log.Info().Str("type", string(srv.Type)).Str("address", fmt.Sprintf("%v:%d", srv.Address, srv.Port)).Msg("register new server")
+
+	key := server.ServerKey{
+        Address: srv.Address,
+        Port:    srv.Port,
+    }
+
 	switch srv.Type {
 	case server.TypeSource:
-		m.Clients[srv] = client.NewSource(srv)
+		m.Clients[key] = client.NewSource(srv)
 	default:
 		log.Warn().Str("type", string(srv.Type)).Msg("unexpected type, fallback to source")
-		m.Clients[srv] = client.NewSource(srv)
+		m.Clients[key] = client.NewSource(srv)
 	}
 }
 
 func (m *Manager) Unregister(srv server.Server) {
 	log.Info().Str("type", string(srv.Type)).Str("address", fmt.Sprintf("%v:%d", srv.Address, srv.Port)).Msg("unregistering server")
-	delete(m.Clients, srv)
+
+	key := server.ServerKey{
+        Address: srv.Address,
+        Port:    srv.Port,
+    }
+
+	delete(m.Clients, key)
 }
