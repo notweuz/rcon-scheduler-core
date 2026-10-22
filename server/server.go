@@ -1,7 +1,5 @@
 package server
 
-import "github.com/notweuz/rcon-scheduler-core/scheduler/job"
-
 type ServerKey struct {
 	Address string
 	Port    int
@@ -12,7 +10,6 @@ type Server struct {
 	Port     int
 	Password string
 	Type     Type
-	Jobs     []job.Job
 }
 
 func New(address string, port int, password string, serverType Type) *Server {

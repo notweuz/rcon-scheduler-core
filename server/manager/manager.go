@@ -28,12 +28,13 @@ func (m *Manager) Register(srv server.Server) {
 		Port:    srv.Port,
 	}
 
+	address := fmt.Sprintf("%v:%d", srv.Address, srv.Port)
 	switch srv.Type {
 	case server.TypeSource:
-		m.Clients[key] = source.NewSource(srv)
+		m.Clients[key] = source.New(address, srv.Password)
 	default:
 		log.Warn().Str("type", string(srv.Type)).Msg("unexpected type, fallback to source")
-		m.Clients[key] = source.NewSource(srv)
+		m.Clients[key] = source.New(address, srv.Password)
 	}
 }
 
