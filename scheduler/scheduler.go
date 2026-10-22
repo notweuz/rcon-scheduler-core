@@ -14,12 +14,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var (
-	ErrUnsupportedType = errors.New("unsupported server type")
-	ErrServerExists    = errors.New("server already exists")
-	ErrServerNotFound  = errors.New("server not found")
-)
-
 type Scheduler struct {
 	clients map[server.Key]rcon.Client
 	cron    gocron.Scheduler
@@ -28,6 +22,10 @@ type Scheduler struct {
 	mu sync.RWMutex
 }
 
+// New creates a Scheduler. Jobs don't run until [Scheduler.Start] is called
+//
+// By default the Scheduler uses UTC and discards all log output;
+// See [WithLocation] and [WithLogger]
 func New(opts ...Option) (*Scheduler, error) {
 	o := options{
 		location: time.UTC,
@@ -48,6 +46,13 @@ func New(opts ...Option) (*Scheduler, error) {
 	}, nil
 }
 
+// Register adds server (srv) to the scheduler and creates an RCON client for it.
+// No connection is made until first command executed.
+//
+// It returns an error wrapping:
+//   - the error from [server.Server.Validate] if srv is invalid;
+//   - [ErrUnsupportedType] if no client implementation exists for srv.Type;
+//   - [ErrServerExists] if a server with the same key is already registered.
 func (s *Scheduler) Register(srv server.Server) error {
 	if err := srv.Validate(); err != nil {
 		return fmt.Errorf("validation failed during addition of server %v: %w", srv.Key(), err)
@@ -70,6 +75,13 @@ func (s *Scheduler) Register(srv server.Server) error {
 	return nil
 }
 
+// Execute runs cmd on the server identified by key and returns the server's response.
+//
+// The command uses the same connection as scheduled jobs and waits for any
+// command currently in progress on that server. If the connection is down,
+// Execute reconnects before sending the command.
+//
+// It returns [ErrServerNotFound] if the server is not registered.
 func (s *Scheduler) Execute(ctx context.Context, key server.Key, cmd string) (string, error) {
 	s.mu.RLock()
 	client, ok := s.clients[key]
@@ -84,6 +96,11 @@ func (s *Scheduler) Execute(ctx context.Context, key server.Key, cmd string) (st
 	return resp, err
 }
 
+// Unregister removes the server identified by key, removes all of its jobs
+// and closes its connection. Jobs that are running at that moment have their
+// context cancelled.
+//
+// It returns [ErrServerNotFound] if no such server is registered.
 func (s *Scheduler) Unregister(key server.Key) error {
 	s.mu.Lock()
 	client, ok := s.clients[key]

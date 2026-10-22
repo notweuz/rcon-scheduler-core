@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-co-op/gocron/v2"
@@ -10,6 +11,14 @@ import (
 	"github.com/notweuz/rcon-scheduler-core/server"
 )
 
+// AddJob schedules j on the server identified by key and returns the job ID,
+// which can be passed to [Scheduler.RemoveJob].
+//
+// The job is validated with [job.Job.Validate] before scheduling.
+// A job never overlaps with itself: if a run is still in progress when the next
+// one is due, the next run is skipped.
+//
+// It returns [ErrServerNotFound] if the server is not registered.
 func (s *Scheduler) AddJob(key server.Key, j job.Job) (uuid.UUID, error) {
 	if err := j.Validate(); err != nil {
 		return uuid.Nil, fmt.Errorf("add job %q: %w", j.Name, err)
@@ -37,8 +46,22 @@ func (s *Scheduler) AddJob(key server.Key, j job.Job) (uuid.UUID, error) {
 	return gj.ID(), nil
 }
 
+// RemoveJob removes the job with the given id from the schedule.
+//
+// If the job is running at that moment, its context is cancelled and it stops
+// before its next step. RemoveJob does not wait for the running job to finish.
+//
+// It returns [ErrJobNotFound] if no job with this id exists.
 func (s *Scheduler) RemoveJob(id uuid.UUID) error {
-	return s.cron.RemoveJob(id)
+	if err := s.cron.RemoveJob(id); err != nil {
+		if errors.Is(err, gocron.ErrJobNotFound) {
+			return fmt.Errorf("remove job %s: %w", id, ErrJobNotFound)
+		}
+		return fmt.Errorf("remove job %s: %w", id, err)
+	}
+
+	s.logger.Info().Str("job_id", id.String()).Msg("job removed")
+	return nil
 }
 
 func (s *Scheduler) runJob(ctx context.Context, key server.Key, j job.Job) {
