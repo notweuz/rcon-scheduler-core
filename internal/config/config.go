@@ -4,25 +4,27 @@ import (
 	"fmt"
 
 	"github.com/notweuz/rcon-scheduler-core/server"
+	"github.com/creasty/defaults"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Timezone string   `mapstructure:"time_zone" default:"UTC"`
+	Timezone string   `mapstructure:"timezone" default:"Europe/Moscow"`
 	LogLevel string   `mapstructure:"log_level" default:"info"`
 	Servers  []Server `mapstructure:"servers,omitempty"`
 }
 
 type Server struct {
 	Address  string      `mapstructure:"address"`
-	Port     int         `mapstructure:"port" default:"8080"`
+	Port     int         `mapstructure:"port" default:"27015"`
 	Password string      `mapstructure:"password"`
 	Type     server.Type `mapstructure:"type" default:"source"`
-	Jobs     []Job       `mapstructure:"job,omitempty"`
+	Jobs     []Job       `mapstructure:"jobs,omitempty"`
 }
 
 type Job struct {
+	Name  string `mapstructure:"name"`
 	Cron  string `mapstructure:"cron"`
 	Steps []Step `mapstructure:"steps"`
 }
@@ -44,9 +46,12 @@ func Load(name string) (*Config, error) {
 	}
 
 	cfg := &Config{}
-	err = v.Unmarshal(&cfg)
+	err = v.Unmarshal(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("err when unmarshaling config: %w", err)
+	}
+	if err := defaults.Set(cfg); err != nil {
+		return nil, fmt.Errorf("apply defaults: %w", err)
 	}
 
 	return cfg, nil
