@@ -4,28 +4,44 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/gorcon/rcon"
-	"github.com/rs/zerolog/log"
 )
+
+type Option func(*Source)
+
+func WithLogger(l *slog.Logger) Option {
+	return func(s *Source) {
+		if l != nil {
+			s.logger = l
+		}
+	}
+}
 
 type Source struct {
 	address  string
 	password string
 
-	mu   sync.Mutex
-	conn *rcon.Conn
+	logger *slog.Logger
+	mu     sync.Mutex
+	conn   *rcon.Conn
 }
 
 const attempts = 5
 
-func New(address, password string) *Source {
-	return &Source{
+func New(address, password string, opts ...Option) *Source {
+	s := &Source{
 		address:  address,
 		password: password,
+		logger:   slog.New(slog.DiscardHandler),
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 func (s *Source) Connect(ctx context.Context) error {
@@ -92,7 +108,7 @@ func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
 		return "", fmt.Errorf("invalid command: %w", err)
 	}
 
-	log.Warn().Err(err).Msg("rcon execution failed, reconnecting...")
+	s.logger.Warn("rcon execution failed, reconnecting", "address", s.address, "err", err)
 
 	s.disconnect()
 	if reconnectErr := s.connect(ctx); reconnectErr != nil {
