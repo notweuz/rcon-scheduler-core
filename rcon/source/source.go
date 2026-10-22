@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	iRcon "github.com/notweuz/rcon-scheduler-core/rcon"
 	"github.com/gorcon/rcon"
 	"github.com/rs/zerolog"
 )
@@ -22,6 +23,7 @@ func WithLogger(l zerolog.Logger) Option {
 type Source struct {
 	address  string
 	password string
+	closed   bool
 
 	logger zerolog.Logger
 	mu     sync.Mutex
@@ -50,6 +52,9 @@ func (s *Source) Connect(ctx context.Context) error {
 }
 
 func (s *Source) connect(ctx context.Context) error {
+	if s.closed {
+		return iRcon.ErrClosed
+	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -127,4 +132,13 @@ func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
 	}
 
 	return response, nil
+}
+
+func (s *Source) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.closed = true
+	s.disconnect()
+	return nil
 }

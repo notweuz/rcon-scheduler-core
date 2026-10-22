@@ -77,7 +77,11 @@ func (s *Scheduler) Execute(ctx context.Context, key server.Key, cmd string) (st
 	if !ok {
 		return "", fmt.Errorf("execute on %s: %w", key.String(), ErrServerNotFound)
 	}
-	return client.Execute(ctx, cmd)
+	resp, err := client.Execute(ctx, cmd)
+	if errors.Is(err, rcon.ErrClosed) {
+		return "", fmt.Errorf("execute on %s: %w", key, ErrServerNotFound)
+	}
+	return resp, err
 }
 
 func (s *Scheduler) Unregister(key server.Key) error {
