@@ -15,7 +15,7 @@ import (
 
 var (
 	ErrUnsupportedType = errors.New("unsupported server type")
-	ErrServerExists    = errors.New("same server already exist")
+	ErrServerExists    = errors.New("server already exists")
 	ErrServerNotFound  = errors.New("server not found")
 )
 
@@ -30,7 +30,7 @@ type Scheduler struct {
 func New(opts ...Option) (*Scheduler, error) {
 	o := options{
 		location: time.UTC,
-		logger: slog.New(slog.DiscardHandler),
+		logger:   slog.New(slog.DiscardHandler),
 	}
 	for _, opt := range opts {
 		opt(&o)
@@ -41,15 +41,15 @@ func New(opts ...Option) (*Scheduler, error) {
 		return nil, fmt.Errorf("create cron scheduler: %w", err)
 	}
 	return &Scheduler{
-		cron: c,
-		logger: o.logger,
+		cron:    c,
+		logger:  o.logger,
 		clients: make(map[server.Key]rcon.Client),
 	}, nil
 }
 
 func (s *Scheduler) Register(srv server.Server) error {
 	if err := srv.Validate(); err != nil {
-		return fmt.Errorf("validation failed during addition of server %v: %w", srv.Address, err)
+		return fmt.Errorf("validation failed during addition of server %v: %w", srv.Key(), err)
 	}
 
 	client, err := s.newClient(srv)
@@ -74,7 +74,7 @@ func (s *Scheduler) Unregister(key server.Key) error {
 	client, ok := s.clients[key]
 	if !ok {
 		s.mu.Unlock()
-		return fmt.Errorf("server %s not found: %w", key.String(), ErrServerNotFound)
+		return fmt.Errorf("remove server %s: %w", key.String(), ErrServerNotFound)
 	}
 	delete(s.clients, key)
 	s.mu.Unlock()
