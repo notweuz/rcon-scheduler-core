@@ -1,7 +1,9 @@
 package rcon
 
+import "context"
+
 type Client interface {
-	Connect() error
-	Execute(cmd string) (string, error)
+	Connect(ctx context.Context) error
+	Execute(ctx context.Context, cmd string) (string, error)
 	Disconnect()
 }

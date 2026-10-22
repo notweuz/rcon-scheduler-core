@@ -1,12 +1,12 @@
 package source
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	iRcon "github.com/notweuz/rcon-scheduler-core/rcon"
-	"github.com/notweuz/rcon-scheduler-core/server"
 
 	"github.com/gorcon/rcon"
 	"github.com/rs/zerolog/log"
@@ -14,36 +14,43 @@ import (
 
 // TODO: apparently this needs mutex so it won't read other jobs while it's reading the current one
 type Source struct {
+	address  string
+	password string
+
 	conn *rcon.Conn
-	srv  server.Server
 }
 
 const attempts = 5
 
-func NewSource(srv server.Server) iRcon.Client {
+func New(address, password string) *Source {
 	return &Source{
-		srv: srv,
+		address:  address,
+		password: password,
 	}
 }
 
-func (s *Source) Connect() error {
-	address := fmt.Sprintf("%v:%d", s.srv.Address, s.srv.Port)
+func (s *Source) Connect(ctx context.Context) error {
+	if s.conn != nil {
+		return nil
+	}
+
 	var err error
-	for i := 0; i < attempts; i++ {
-		conn, err1 := rcon.Dial(address, s.srv.Password, rcon.SetDialTimeout(5*time.Second), rcon.SetDeadline(5*time.Second))
-		if err1 != nil {
-			err = err1 // I'm actually not sure can I just use err here (i'm about var shadowing fyi)
-			log.Warn().Err(err1).Str("address", address).Int("attempt", i+1).Msg("retrying connection...")
-		} else {
+	for i := range attempts {
+		var conn *rcon.Conn
+		conn, err = rcon.Dial(s.address, s.password, rcon.SetDialTimeout(5*time.Second), rcon.SetDeadline(5*time.Second))
+		if err == nil {
 			s.conn = conn
 			return nil
 		}
 		if i < attempts-1 {
-			time.Sleep(3 * time.Second)
+			select {
+			case <-time.After(5 * time.Second):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
-	log.Err(err).Str("address", address).Int("attempts", attempts).Msg("failed to connect to source rcon")
-	return fmt.Errorf("failed to connect: %w", err)
+	return fmt.Errorf("connect %s: %w", s.address, err)
 }
 
 func (s *Source) Disconnect() {
@@ -54,7 +61,7 @@ func (s *Source) Disconnect() {
 	s.conn = nil
 }
 
-func (s *Source) Execute(cmd string) (string, error) {
+func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
 	if s.conn == nil {
 		return "", iRcon.ErrNotConnected
 	}
@@ -72,7 +79,7 @@ func (s *Source) Execute(cmd string) (string, error) {
 	log.Warn().Err(err).Msg("rcon execution failed, reconnecting...")
 
 	s.Disconnect()
-	if reconnectErr := s.Connect(); reconnectErr != nil {
+	if reconnectErr := s.Connect(ctx); reconnectErr != nil {
 		return "", errors.Join(
 			fmt.Errorf("failed executing command: %w", err),
 			fmt.Errorf("failed reconnecting: %w", reconnectErr),
