@@ -14,6 +14,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// Scheduler runs [job.Job]s on registered servers according to their cron schedules.
+// Create it with [New].
 type Scheduler struct {
 	clients map[server.Key]rcon.Client
 	cron    gocron.Scheduler
@@ -22,10 +24,10 @@ type Scheduler struct {
 	mu sync.RWMutex
 }
 
-// New creates a Scheduler. Jobs don't run until [Scheduler.Start] is called
+// New creates a Scheduler. Jobs don't run until [Scheduler.Start] is called.
 //
 // By default the Scheduler uses UTC and discards all log output;
-// See [WithLocation] and [WithLogger]
+// see [WithLocation] and [WithLogger].
 func New(opts ...Option) (*Scheduler, error) {
 	o := options{
 		location: time.UTC,
@@ -46,8 +48,8 @@ func New(opts ...Option) (*Scheduler, error) {
 	}, nil
 }
 
-// Register adds server (srv) to the scheduler and creates an RCON client for it.
-// No connection is made until first command executed.
+// Register adds srv to the scheduler and creates an RCON client for it.
+// No connection is made until the first command is executed.
 //
 // It returns an error wrapping:
 //   - the error from [server.Server.Validate] if srv is invalid;
@@ -128,10 +130,13 @@ func (s *Scheduler) newClient(srv server.Server) (rcon.Client, error) {
 	}
 }
 
+// Start starts running scheduled jobs. Jobs added after Start are scheduled immediately.
 func (s *Scheduler) Start() {
 	s.cron.Start()
 }
 
+// Shutdown stops the schedule, cancels the context of running jobs, waits for
+// them to finish and closes all connections. The Scheduler cannot be started again.
 func (s *Scheduler) Shutdown() error {
 	err := s.cron.Shutdown()
 

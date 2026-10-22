@@ -1,3 +1,5 @@
+// Package job describes scheduled tasks: a cron expression and a sequence of
+// RCON commands and pauses.
 package job
 
 import (
@@ -10,14 +12,29 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+// ErrNoSteps is returned by [Job.Validate] when the job has no steps.
 var ErrNoSteps = errors.New("no steps")
 
+// Job is a named sequence of steps executed on a schedule.
 type Job struct {
-	Name  string
-	Cron  string
+	// Name identifies the job in logs.
+	Name string
+
+	// Cron is a standard 5-field cron expression, e.g. "55 3 * * *".
+	// Descriptors such as "@daily" or "@every 1h" are also accepted.
+	// It is interpreted in the scheduler's time zone.
+	Cron string
+
+	// Steps are executed in order. Execution stops at the first failed step.
 	Steps []Step
 }
 
+// Run executes the steps of j in order on c, without any schedule.
+// Server responses are discarded.
+//
+// It stops at the first failed command and returns its error.
+// If ctx is cancelled during a pause, Run returns ctx.Err() immediately;
+// a command already in progress is allowed to finish.
 func (j Job) Run(ctx context.Context, c rcon.Client) error {
 	for i, step := range j.Steps {
 		switch {
@@ -37,6 +54,8 @@ func (j Job) Run(ctx context.Context, c rcon.Client) error {
 	return nil
 }
 
+// Validate checks that the cron expression is valid, that j has at least one
+// step and that every step is valid (see [Step.Validate]).
 func (j Job) Validate() error {
 	if _, err := cron.ParseStandard(j.Cron); err != nil {
 		return fmt.Errorf("invalid cron %q: %w", j.Cron, err)

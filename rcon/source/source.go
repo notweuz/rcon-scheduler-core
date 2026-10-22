@@ -1,3 +1,5 @@
+// Package source implements an RCON client for the Source RCON protocol,
+// which is also used by Minecraft.
 package source
 
 import (
@@ -12,26 +14,33 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// Option configures a [Source] created with [New].
 type Option func(*Source)
 
+// WithLogger sets the logger for connection and reconnection events.
+// By default all log output is discarded.
 func WithLogger(l zerolog.Logger) Option {
 	return func(s *Source) {
 		s.logger = l
 	}
 }
 
+// Source is a Source RCON client. It implements [rcon.Client] and is safe for
+// concurrent use: commands are sent one at a time over a single connection.
 type Source struct {
 	address  string
 	password string
-	closed   bool
+	logger   zerolog.Logger
 
-	logger zerolog.Logger
-	mu     sync.Mutex
+	mu     sync.Mutex // guards the fields below
 	conn   *gorcon.Conn
+	closed bool
 }
 
 const attempts = 5
 
+// New returns a client for the server at address ("host:port").
+// No connection is made until [Source.Connect] or [Source.Execute] is called.
 func New(address, password string, opts ...Option) *Source {
 	s := &Source{
 		address:  address,
@@ -44,6 +53,11 @@ func New(address, password string, opts ...Option) *Source {
 	return s
 }
 
+// Connect opens the connection if it is not open yet. It makes up to 5 attempts,
+// 5 seconds apart; the pause between attempts is interrupted when ctx is cancelled.
+//
+// Calling Connect is optional: [Source.Execute] connects on demand.
+// After [Source.Close] it returns [rcon.ErrClosed].
 func (s *Source) Connect(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -82,6 +96,8 @@ func (s *Source) connect(ctx context.Context) error {
 	return fmt.Errorf("connect %s: %w", s.address, err)
 }
 
+// Disconnect closes the current connection. A later [Source.Execute] reconnects.
+// Use [Source.Close] to close the client permanently.
 func (s *Source) Disconnect() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -97,6 +113,12 @@ func (s *Source) disconnect() {
 	s.conn = nil
 }
 
+// Execute sends cmd to the server and returns its response, connecting first
+// if needed (see [Source.Connect]). Concurrent calls wait for each other.
+//
+// If the command fails because of a network error, Execute reconnects and
+// retries it once. Empty or too long commands fail without a retry.
+// After [Source.Close] it returns [rcon.ErrClosed].
 func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -134,6 +156,8 @@ func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
 	return response, nil
 }
 
+// Close closes the connection permanently. After Close, [Source.Connect] and
+// [Source.Execute] return [rcon.ErrClosed]. It is safe to call Close more than once.
 func (s *Source) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
