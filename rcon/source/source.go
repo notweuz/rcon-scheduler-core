@@ -52,6 +52,10 @@ func (s *Source) Connect(ctx context.Context) error {
 }
 
 func (s *Source) connect(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	if s.conn != nil {
 		return nil
 	}
