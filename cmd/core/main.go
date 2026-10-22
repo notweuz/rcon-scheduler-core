@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/rs/zerolog/log"
-	slogzerolog "github.com/samber/slog-zerolog/v2" // TODO: i want to migrate to zerolog ngl :)
 
 	"github.com/notweuz/rcon-scheduler-core/internal/config"
 	"github.com/notweuz/rcon-scheduler-core/internal/logger"
@@ -37,10 +35,8 @@ func main() {
 		log.Fatal().Err(err).Msg("invalid config")
 	}
 
-	slogger := slog.New(slogzerolog.Option{Logger: &log.Logger}.NewZerologHandler())
-
 	sched, err := scheduler.New(
-		scheduler.WithLogger(slogger),
+		scheduler.WithLogger(log.Logger),
 		scheduler.WithLocation(loc),
 	)
 	if err != nil {

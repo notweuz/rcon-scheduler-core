@@ -1,23 +1,20 @@
 package scheduler
 
 import (
-	"log/slog"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 type Option func(*options)
 
 type options struct {
 	location *time.Location
-	logger *slog.Logger
+	logger   zerolog.Logger
 }
 
-func WithLogger(logger *slog.Logger) Option {
-	return func(o *options) {
-		if logger != nil {
-			o.logger = logger
-		}
-	}
+func WithLogger(logger zerolog.Logger) Option {
+	return func(o *options) { o.logger = logger }
 }
 
 func WithLocation(location *time.Location) Option {

@@ -33,7 +33,7 @@ func (s *Scheduler) AddJob(key server.Key, j job.Job) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("add job %q: %w", j.Name, err)
 	}
 
-	s.logger.Info("job added", "server", key.String(), "job", j.Name, "cron", j.Cron)
+	s.logger.Info().Str("server", key.String()).Str("job", j.Name).Str("cron", j.Cron).Msg("job added")
 	return gj.ID(), nil
 }
 
@@ -42,19 +42,21 @@ func (s *Scheduler) RemoveJob(id uuid.UUID) error {
 }
 
 func (s *Scheduler) runJob(ctx context.Context, key server.Key, j job.Job) {
+	l := s.logger.With().Str("server", key.String()).Str("job", j.Name).Logger()
+
 	s.mu.RLock()
 	client, ok := s.clients[key]
 	s.mu.RUnlock()
 
 	if !ok {
-		s.logger.Error("job skipped: server not found", "server", key.String(), "job", j.Name)
+		l.Error().Msg("job skipped: server not found")
 		return
 	}
 
-	s.logger.Info("job started", "server", key.String(), "job", j.Name)
+	l.Info().Msg("job started")
 	if err := j.Run(ctx, client); err != nil {
-		s.logger.Error("job failed", "server", key.String(), "job", j.Name, "err", err)
+		l.Error().Err(err).Msg("job failed")
 		return
 	}
-	s.logger.Info("job finished", "server", key.String(), "job", j.Name)
+	l.Info().Msg("job finished")
 }

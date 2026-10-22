@@ -3,7 +3,6 @@ package scheduler
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"sync"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/notweuz/rcon-scheduler-core/rcon"
 	"github.com/notweuz/rcon-scheduler-core/rcon/source"
 	"github.com/notweuz/rcon-scheduler-core/server"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -22,7 +22,7 @@ var (
 type Scheduler struct {
 	clients map[server.Key]rcon.Client
 	cron    gocron.Scheduler
-	logger  *slog.Logger
+	logger  zerolog.Logger
 
 	mu sync.RWMutex
 }
@@ -30,7 +30,7 @@ type Scheduler struct {
 func New(opts ...Option) (*Scheduler, error) {
 	o := options{
 		location: time.UTC,
-		logger:   slog.New(slog.DiscardHandler),
+		logger:   zerolog.Nop(),
 	}
 	for _, opt := range opts {
 		opt(&o)
@@ -65,7 +65,7 @@ func (s *Scheduler) Register(srv server.Server) error {
 	}
 	s.clients[srv.Key()] = client
 
-	s.logger.Info("server added", "server", srv.Key().String(), "type", srv.Type)
+	s.logger.Info().Str("server", srv.Key().String()).Str("type", string(srv.Type)).Msg("server added")
 	return nil
 }
 
@@ -82,12 +82,12 @@ func (s *Scheduler) Unregister(key server.Key) error {
 	s.cron.RemoveByTags(key.String())
 	client.Disconnect()
 
-	s.logger.Info("server removed", "server", key.String())
+	s.logger.Info().Str("server", key.String()).Msg("server removed")
 	return nil
 }
 
 func (s *Scheduler) newClient(srv server.Server) (rcon.Client, error) {
-	clientLogger := s.logger.With("server", srv.Key().String())
+	clientLogger := s.logger.With().Str("server", srv.Key().String()).Logger()
 	switch srv.Type {
 	case server.TypeSource:
 		return source.New(srv.Key().String(), srv.Password, source.WithLogger(clientLogger)), nil
