@@ -30,8 +30,8 @@ func (s Server) Key() Key {
 	return Key{Address: s.Address, Port: s.Port}
 }
 
-func New(address string, port int, password string, serverType Type) *Server {
-	return &Server{
+func New(address string, port int, password string, serverType Type) Server {
+	return Server{
 		Address:  address,
 		Port:     port,
 		Password: password,
