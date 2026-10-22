@@ -3,8 +3,8 @@ package client
 import (
 	"errors"
 	"fmt"
-	internalRcon "rcon-scheduler-core/internal/rcon"
-	"rcon-scheduler-core/internal/rcon/server"
+	iRcon "rcon-scheduler-core/internal/rcon"
+	"rcon-scheduler-core/internal/server"
 	"time"
 
 	"github.com/gorcon/rcon"
@@ -17,12 +17,19 @@ type Source struct {
 	srv   server.Server
 }
 
-func (s *Source) Connect(srv server.Server) error {
-	s.srv = srv
-	address := fmt.Sprintf("%v:%d", srv.Address, srv.Port)
+const attempts = 5
+
+func NewSource(srv server.Server) iRcon.Client {
+	return &Source{
+		srv:   srv,
+	}
+}
+
+func (s *Source) Connect() error {
+	address := fmt.Sprintf("%v:%d", s.srv.Address, s.srv.Port)
 	var err error
-	for i := 0; i < internalRcon.Attempts; i++ {
-		conn, err1 := rcon.Dial(address, srv.Password, rcon.SetDialTimeout(5*time.Second), rcon.SetDeadline(5*time.Second))
+	for i := 0; i < attempts; i++ {
+		conn, err1 := rcon.Dial(address, s.srv.Password, rcon.SetDialTimeout(5*time.Second), rcon.SetDeadline(5*time.Second))
 		if err1 != nil {
 			err = err1 // I'm actually not sure can I just use err here (i'm about var shadowing fyi)
 			log.Warn().Err(err1).Str("address", address).Int("attempt", i+1).Msg("retrying connection...")
@@ -30,11 +37,11 @@ func (s *Source) Connect(srv server.Server) error {
 			s.conn = conn
 			return nil
 		}
-		if i < internalRcon.Attempts-1 {
+		if i < attempts-1 {
 			time.Sleep(3 * time.Second)
 		}
 	}
-	log.Err(err).Str("address", address).Int("attempts", internalRcon.Attempts).Msg("failed to connect to source rcon")
+	log.Err(err).Str("address", address).Int("attempts", attempts).Msg("failed to connect to source rcon")
 	return fmt.Errorf("failed to connect: %w", err)
 }
 
@@ -48,7 +55,7 @@ func (s *Source) Disconnect() {
 
 func (s *Source) Execute(cmd string) (string, error) {
 	if s.conn == nil {
-		return "", internalRcon.ErrNotConnected
+		return "", ErrNotConnected
 	}
 
 	response, err := s.conn.Execute(cmd)
@@ -64,7 +71,7 @@ func (s *Source) Execute(cmd string) (string, error) {
 	log.Warn().Err(err).Msg("rcon execution failed, reconnecting...")
 
 	s.Disconnect()
-	if reconnectErr := s.Connect(s.srv); reconnectErr != nil {
+	if reconnectErr := s.Connect(); reconnectErr != nil {
 		return "", errors.Join(
 			fmt.Errorf("failed executing command: %w", err),
 			fmt.Errorf("failed reconnecting: %w", reconnectErr),
