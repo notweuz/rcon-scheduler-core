@@ -4,19 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
-
-	iRcon "github.com/notweuz/rcon-scheduler-core/rcon"
 
 	"github.com/gorcon/rcon"
 	"github.com/rs/zerolog/log"
 )
 
-// TODO: apparently this needs mutex so it won't read other jobs while it's reading the current one
 type Source struct {
 	address  string
 	password string
 
+	mu   sync.Mutex
 	conn *rcon.Conn
 }
 
@@ -30,6 +29,13 @@ func New(address, password string) *Source {
 }
 
 func (s *Source) Connect(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.connect(ctx)
+}
+
+func (s *Source) connect(ctx context.Context) error {
 	if s.conn != nil {
 		return nil
 	}
@@ -54,6 +60,13 @@ func (s *Source) Connect(ctx context.Context) error {
 }
 
 func (s *Source) Disconnect() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.disconnect()
+}
+
+func (s *Source) disconnect() {
 	if s.conn == nil {
 		return
 	}
@@ -62,8 +75,11 @@ func (s *Source) Disconnect() {
 }
 
 func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
-	if s.conn == nil {
-		return "", iRcon.ErrNotConnected
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if err := s.connect(ctx); err != nil {
+		return "", fmt.Errorf("failed to connect on execute: %w", err)
 	}
 
 	response, err := s.conn.Execute(cmd)
@@ -78,8 +94,8 @@ func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
 
 	log.Warn().Err(err).Msg("rcon execution failed, reconnecting...")
 
-	s.Disconnect()
-	if reconnectErr := s.Connect(ctx); reconnectErr != nil {
+	s.disconnect()
+	if reconnectErr := s.connect(ctx); reconnectErr != nil {
 		return "", errors.Join(
 			fmt.Errorf("failed executing command: %w", err),
 			fmt.Errorf("failed reconnecting: %w", reconnectErr),
@@ -88,7 +104,7 @@ func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
 
 	response, err = s.conn.Execute(cmd)
 	if err != nil {
-		s.Disconnect()
+		s.disconnect()
 		return "", fmt.Errorf("failed executing command after reconnect: %w", err)
 	}
 
