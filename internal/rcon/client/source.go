@@ -13,15 +13,15 @@ import (
 
 // TODO: apparently this needs mutex so it won't read other jobs while it's reading the current one
 type Source struct {
-	conn  *rcon.Conn
-	srv   server.Server
+	conn *rcon.Conn
+	srv  server.Server
 }
 
 const attempts = 5
 
 func NewSource(srv server.Server) iRcon.Client {
 	return &Source{
-		srv:   srv,
+		srv: srv,
 	}
 }
 

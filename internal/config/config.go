@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"rcon-scheduler-core/internal/rcon/server"
+	"rcon-scheduler-core/internal/server"
 
 	"github.com/spf13/viper"
 )
