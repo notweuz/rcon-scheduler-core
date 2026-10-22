@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -67,6 +68,16 @@ func (s *Scheduler) Register(srv server.Server) error {
 
 	s.logger.Info().Str("server", srv.Key().String()).Str("type", string(srv.Type)).Msg("server added")
 	return nil
+}
+
+func (s *Scheduler) Execute(ctx context.Context, key server.Key, cmd string) (string, error) {
+	s.mu.RLock()
+	client, ok := s.clients[key]
+	s.mu.RUnlock()
+	if !ok {
+		return "", fmt.Errorf("execute on %s: %w", key.String(), ErrServerNotFound)
+	}
+	return client.Execute(ctx, cmd)
 }
 
 func (s *Scheduler) Unregister(key server.Key) error {
