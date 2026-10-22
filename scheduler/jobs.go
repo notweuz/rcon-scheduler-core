@@ -37,7 +37,7 @@ func (s *Scheduler) AddJob(key server.Key, j job.Job) (uuid.UUID, error) {
 	return gj.ID(), nil
 }
 
-func (s *Scheduler) removeJob(id uuid.UUID) error {
+func (s *Scheduler) RemoveJob(id uuid.UUID) error {
 	return s.cron.RemoveJob(id)
 }
 
