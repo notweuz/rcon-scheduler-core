@@ -3,9 +3,10 @@ package source
 import (
 	"errors"
 	"fmt"
-	iRcon "rcon-scheduler-core/rcon"
-	"rcon-scheduler-core/server"
 	"time"
+
+	iRcon "github.com/notweuz/rcon-scheduler-core/rcon"
+	"github.com/notweuz/rcon-scheduler-core/server"
 
 	"github.com/gorcon/rcon"
 	"github.com/rs/zerolog/log"

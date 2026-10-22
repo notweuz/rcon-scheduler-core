@@ -2,7 +2,8 @@ package config
 
 import (
 	"fmt"
-	"rcon-scheduler-core/server"
+
+	"github.com/notweuz/rcon-scheduler-core/server"
 
 	"github.com/spf13/viper"
 )

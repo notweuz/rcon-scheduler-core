@@ -1,4 +1,4 @@
-module rcon-scheduler-core
+module github.com/notweuz/rcon-scheduler-core
 
 go 1.26.6
 

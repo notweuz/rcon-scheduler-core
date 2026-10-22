@@ -2,9 +2,10 @@ package manager
 
 import (
 	"fmt"
-	"rcon-scheduler-core/rcon"
-	"rcon-scheduler-core/rcon/source"
-	"rcon-scheduler-core/server"
+
+	"github.com/notweuz/rcon-scheduler-core/rcon"
+	"github.com/notweuz/rcon-scheduler-core/rcon/source"
+	"github.com/notweuz/rcon-scheduler-core/server"
 
 	"github.com/rs/zerolog/log"
 )

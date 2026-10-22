@@ -3,8 +3,9 @@ package job
 import (
 	"context"
 	"fmt"
-	"rcon-scheduler-core/rcon"
 	"time"
+
+	"github.com/notweuz/rcon-scheduler-core/rcon"
 
 	"github.com/rs/zerolog/log"
 )

@@ -1,6 +1,6 @@
 package server
 
-import "rcon-scheduler-core/scheduler/job"
+import "github.com/notweuz/rcon-scheduler-core/scheduler/job"
 
 type ServerKey struct {
 	Address string

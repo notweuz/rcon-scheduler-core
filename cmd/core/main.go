@@ -1,8 +1,8 @@
 package main
 
 import (
-	"rcon-scheduler-core/internal/config"
-	"rcon-scheduler-core/internal/logger"
+	"github.com/notweuz/rcon-scheduler-core/internal/config"
+	"github.com/notweuz/rcon-scheduler-core/internal/logger"
 
 	"github.com/rs/zerolog/log"
 )
