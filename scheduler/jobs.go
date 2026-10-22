@@ -44,7 +44,7 @@ func (s *Scheduler) removeJob(id uuid.UUID) error {
 func (s *Scheduler) runJob(ctx context.Context, key server.Key, j job.Job) {
 	s.mu.RLock()
 	client, ok := s.clients[key]
-	s.mu.Unlock()
+	s.mu.RUnlock()
 
 	if !ok {
 		s.logger.Error("job skipped: server not found", "server", key.String(), "job", j.Name)
