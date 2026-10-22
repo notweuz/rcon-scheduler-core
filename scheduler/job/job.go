@@ -20,7 +20,7 @@ func (j Job) Run(ctx context.Context, c rcon.Client) error {
 	for i, step := range j.Steps {
 		switch {
 		case step.Command != "":
-			resp, err := c.Execute(step.Command)
+			resp, err := c.Execute(ctx, step.Command)
 			if err != nil {
 				return fmt.Errorf("step %d (%q): %w", i, step.Command, err)
 			}
