@@ -112,7 +112,7 @@ func (s *Scheduler) Unregister(key server.Key) error {
 	s.mu.Unlock()
 
 	s.cron.RemoveByTags(key.String())
-	client.Disconnect()
+	client.Close()
 
 	s.logger.Info().Str("server", key.String()).Msg("server removed")
 	return nil
@@ -138,7 +138,7 @@ func (s *Scheduler) Shutdown() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, c := range s.clients {
-		c.Disconnect()
+		c.Close()
 	}
 	return err
 }
