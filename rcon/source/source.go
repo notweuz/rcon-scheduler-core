@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	iRcon "github.com/notweuz/rcon-scheduler-core/rcon"
-	"github.com/gorcon/rcon"
+	gorcon "github.com/gorcon/rcon"
+	"github.com/notweuz/rcon-scheduler-core/rcon"
 	"github.com/rs/zerolog"
 )
 
@@ -27,7 +27,7 @@ type Source struct {
 
 	logger zerolog.Logger
 	mu     sync.Mutex
-	conn   *rcon.Conn
+	conn   *gorcon.Conn
 }
 
 const attempts = 5
@@ -53,7 +53,7 @@ func (s *Source) Connect(ctx context.Context) error {
 
 func (s *Source) connect(ctx context.Context) error {
 	if s.closed {
-		return iRcon.ErrClosed
+		return rcon.ErrClosed
 	}
 	if err := ctx.Err(); err != nil {
 		return err
@@ -65,8 +65,8 @@ func (s *Source) connect(ctx context.Context) error {
 
 	var err error
 	for i := range attempts {
-		var conn *rcon.Conn
-		conn, err = rcon.Dial(s.address, s.password, rcon.SetDialTimeout(5*time.Second), rcon.SetDeadline(5*time.Second))
+		var conn *gorcon.Conn
+		conn, err = gorcon.Dial(s.address, s.password, gorcon.SetDialTimeout(5*time.Second), gorcon.SetDeadline(5*time.Second))
 		if err == nil {
 			s.conn = conn
 			return nil
@@ -110,8 +110,8 @@ func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
 		return response, nil
 	}
 
-	if errors.Is(err, rcon.ErrCommandEmpty) ||
-		errors.Is(err, rcon.ErrCommandTooLong) {
+	if errors.Is(err, gorcon.ErrCommandEmpty) ||
+		errors.Is(err, gorcon.ErrCommandTooLong) {
 		return "", fmt.Errorf("invalid command: %w", err)
 	}
 
