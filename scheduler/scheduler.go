@@ -10,6 +10,7 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"github.com/notweuz/rcon-scheduler-core/rcon"
 	"github.com/notweuz/rcon-scheduler-core/rcon/source"
+	"github.com/notweuz/rcon-scheduler-core/rcon/telnet"
 	"github.com/notweuz/rcon-scheduler-core/rcon/websocket"
 	"github.com/notweuz/rcon-scheduler-core/server"
 	"github.com/rs/zerolog"
@@ -128,6 +129,8 @@ func (s *Scheduler) newClient(srv server.Server) (rcon.Client, error) {
 		return source.New(srv.Key().String(), srv.Password, source.WithLogger(clientLogger)), nil
 	case server.TypeWebsocket:
 		return websocket.New(srv.Key().String(), srv.Password, websocket.WithLogger(clientLogger)), nil
+	case server.TypeTelnet:
+		return telnet.New(srv.Key().String(), srv.Password, telnet.WithLogger(clientLogger)), nil
 	default:
 		return nil, fmt.Errorf("%w: %q", ErrUnsupportedType, srv.Type)
 	}

@@ -10,6 +10,6 @@ const (
 	// TypeWebsocket is WebSocket RCON.
 	TypeWebsocket Type = "websocket"
 
-	// TypeTelnet is Telnet RCON. Not implemented yet.
+	// TypeTelnet is Telnet RCON.
 	TypeTelnet Type = "telnet"
 )
