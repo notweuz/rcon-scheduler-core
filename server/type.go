@@ -7,7 +7,7 @@ const (
 	// TypeSource is the Source RCON protocol, also used by Minecraft.
 	TypeSource Type = "source"
 
-	// TypeWebsocket is WebSocket RCON. Not implemented yet.
+	// TypeWebsocket is WebSocket RCON.
 	TypeWebsocket Type = "websocket"
 
 	// TypeTelnet is Telnet RCON. Not implemented yet.
