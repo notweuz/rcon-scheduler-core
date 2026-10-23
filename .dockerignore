@@ -1,0 +1,5 @@
+.git
+.vscode
+.DS_Store
+configs/core.yaml
+*.out
