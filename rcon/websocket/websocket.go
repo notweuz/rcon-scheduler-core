@@ -1,4 +1,4 @@
-// Package source implements an RCON client for the Websocket RCON protocol.
+// Package websocket implements an RCON client for the Websocket RCON protocol.
 package websocket
 
 import (
