@@ -16,6 +16,7 @@ require (
 require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/gorcon/telnet v1.2.3 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/mattn/go-colorable v0.1.16 // indirect
