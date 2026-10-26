@@ -113,9 +113,9 @@ func (s *Scheduler) Unregister(key server.Key) error {
 		return fmt.Errorf("remove server %s: %w", key.String(), ErrServerNotFound)
 	}
 	delete(s.clients, key)
-	s.mu.Unlock()
 
 	s.cron.RemoveByTags(key.String())
+	s.mu.Unlock()
 	client.Close()
 
 	s.logger.Info().Str("server", key.String()).Msg("server removed")
