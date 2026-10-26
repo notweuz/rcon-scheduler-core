@@ -29,6 +29,15 @@ type Job struct {
 	Steps []Step
 }
 
+// New creates a new [Job]. It doesn't run until [Job.Run] is called.
+func New(name, cron string, steps []Step) Job {
+	return Job{
+		Name:  name,
+		Cron:  cron,
+		Steps: steps,
+	}
+}
+
 // Run executes the steps of j in order on c, without any schedule.
 // Server responses are discarded.
 //

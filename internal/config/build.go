@@ -53,5 +53,5 @@ func (j Job) toJob() (job.Job, error) {
 		}
 		steps = append(steps, st)
 	}
-	return job.Job{Name: j.Name, Cron: j.Cron, Steps: steps}, nil
+	return job.New(j.Name, j.Cron, steps), nil
 }
