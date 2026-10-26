@@ -86,7 +86,7 @@ func (t *Telnet) connect(ctx context.Context) error {
 		}
 		if i < attempts-1 {
 			select {
-			case <-time.After(5*time.Second):
+			case <-time.After(5 * time.Second):
 			case <-ctx.Done():
 				return ctx.Err()
 			}
@@ -137,7 +137,7 @@ func (t *Telnet) Execute(ctx context.Context, cmd string) (string, error) {
 	}
 
 	t.logger.Warn().Err(err).Str("address", t.address).Msg("rcon execution failed, reconnecting")
-	
+
 	t.disconnect()
 	if reconnectErr := t.connect(ctx); reconnectErr != nil {
 		return "", errors.Join(
