@@ -158,11 +158,10 @@ func (s *Source) Execute(ctx context.Context, cmd string) (string, error) {
 
 // Close closes the connection permanently. After Close, [Source.Connect] and
 // [Source.Execute] return [rcon.ErrClosed]. It is safe to call Close more than once.
-func (s *Source) Close() error {
+func (s *Source) Close() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.closed = true
 	s.disconnect()
-	return nil
 }

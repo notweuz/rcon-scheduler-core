@@ -157,11 +157,10 @@ func (t *Telnet) Execute(ctx context.Context, cmd string) (string, error) {
 
 // Close closes the connection permanently. After Close, [Telnet.Connect] and
 // [Telnet.Execute] return [rcon.ErrClosed]. It is safe to call Close more than once.
-func (t *Telnet) Close() error {
+func (t *Telnet) Close() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	t.closed = true
 	t.disconnect()
-	return nil
 }

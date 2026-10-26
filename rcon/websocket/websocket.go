@@ -157,11 +157,10 @@ func (w *Websocket) Execute(ctx context.Context, cmd string) (string, error) {
 
 // Close closes the connection permanently. After Close, [Websocket.Connect] and
 // [Websocket.Execute] return [rcon.ErrClosed]. It is safe to call Close more than once.
-func (w *Websocket) Close() error {
+func (w *Websocket) Close() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	w.closed = true
 	w.disconnect()
-	return nil
 }

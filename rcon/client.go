@@ -18,5 +18,5 @@ type Client interface {
 
 	// Close closes the connection permanently. After Close, Connect and
 	// Execute return [ErrClosed].
-	Close() error
+	Close()
 }
