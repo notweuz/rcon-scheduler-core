@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 
-	"github.com/notweuz/rcon-scheduler-core/server"
 	"github.com/creasty/defaults"
+	"github.com/notweuz/rcon-scheduler-core/server"
 
 	"github.com/spf13/viper"
 )
@@ -24,9 +24,10 @@ type Server struct {
 }
 
 type Job struct {
-	Name  string `mapstructure:"name"`
-	Cron  string `mapstructure:"cron"`
-	Steps []Step `mapstructure:"steps"`
+	Name       string `mapstructure:"name"`
+	Cron       string `mapstructure:"cron"`
+	LogResults bool   `mapstructure:"log_results"`
+	Steps      []Step `mapstructure:"steps"`
 }
 
 type Step struct {

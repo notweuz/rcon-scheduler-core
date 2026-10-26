@@ -7,6 +7,7 @@ servers:
     jobs:
       - name: "Auto Shutdown" # or auto-restart if you have docker with auto-restart on exit
         cron: "0 0 * * *"
+        log_results: true
         steps:
           - execute: "say §cServer will restart in 10 minutes!"
           - wait: "5m"

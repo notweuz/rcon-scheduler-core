@@ -29,37 +29,37 @@ type Job struct {
 	// Steps are executed in order. Execution stops at the first failed step.
 	Steps []Step
 
-	logger zerolog.Logger
+	logResults bool
 }
 
 // New creates a new [Job]. It doesn't run until [Job.Run] is called.
 //
-// By default the Job discards all log output;
-// See [WithLogger]
+// By default server responses are logged at debug level; see [WithLogResults].
 func New(name, cron string, steps []Step, opts ...Option) Job {
-	o := options{
-		logger:   zerolog.Nop(),
-	}
-
+	var o options
 	for _, opt := range opts {
 		opt(&o)
 	}
 
 	return Job{
-		Name:   name,
-		Cron:   cron,
-		Steps:  steps,
-		logger: o.logger,
+		Name:       name,
+		Cron:       cron,
+		Steps:      steps,
+		logResults: o.logResults,
 	}
 }
 
 // Run executes the steps of j in order on c, without any schedule.
-// Server responses are discarded.
+//
+// Run logs to the logger stored in ctx (see [zerolog.Ctx]); if ctx carries no
+// logger, log output is discarded. Each command and its server response is
+// logged at debug level, or at info level if j was created with [WithLogResults].
 //
 // It stops at the first failed command and returns its error.
 // If ctx is cancelled during a pause, Run returns ctx.Err() immediately;
 // a command already in progress is allowed to finish.
 func (j Job) Run(ctx context.Context, c rcon.Client) error {
+	log := zerolog.Ctx(ctx)
 	for i, step := range j.Steps {
 		switch {
 		case step.Command != "":
@@ -67,8 +67,13 @@ func (j Job) Run(ctx context.Context, c rcon.Client) error {
 			if err != nil {
 				return fmt.Errorf("step %d (%q): %w", i, step.Command, err)
 			}
-			j.logger.Info().Str("response", response).Msg("command send!")
+			ev := log.Debug()
+			if j.logResults {
+				ev = log.Info()
+			}
+			ev.Int("step", i).Str("command", step.Command).Str("response", response).Msg("command executed")
 		case step.Wait > 0:
+			log.Debug().Int("step", i).Dur("wait", step.Wait).Msg("waiting")
 			select {
 			case <-time.After(step.Wait):
 			case <-ctx.Done():

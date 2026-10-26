@@ -77,7 +77,7 @@ func (s *Scheduler) runJob(ctx context.Context, key server.Key, j job.Job) {
 	}
 
 	l.Info().Msg("job started")
-	if err := j.Run(ctx, client); err != nil {
+	if err := j.Run(l.WithContext(ctx), client); err != nil {
 		l.Error().Err(err).Msg("job failed")
 		return
 	}

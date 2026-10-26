@@ -10,7 +10,7 @@ import (
 
 type Entry struct {
 	Server server.Server
-	Jobs []job.Job
+	Jobs   []job.Job
 }
 
 func (c *Config) Build() ([]Entry, error) {
@@ -53,5 +53,5 @@ func (j Job) toJob() (job.Job, error) {
 		}
 		steps = append(steps, st)
 	}
-	return job.New(j.Name, j.Cron, steps), nil
+	return job.New(j.Name, j.Cron, steps, job.WithLogResults(j.LogResults)), nil
 }
