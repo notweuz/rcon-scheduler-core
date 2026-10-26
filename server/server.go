@@ -4,6 +4,8 @@ package server
 import (
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
 )
 
 var (
@@ -22,7 +24,7 @@ type Key struct {
 
 // String returns the key in "address:port" form.
 func (k Key) String() string {
-	return fmt.Sprintf("%v:%d", k.Address, k.Port)
+	return net.JoinHostPort(k.Address, strconv.Itoa(k.Port))
 }
 
 // Server holds the parameters needed to connect to a game server over RCON.
