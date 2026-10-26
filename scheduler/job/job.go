@@ -10,6 +10,7 @@ import (
 
 	"github.com/notweuz/rcon-scheduler-core/rcon"
 	"github.com/robfig/cron/v3"
+	"github.com/rs/zerolog"
 )
 
 // ErrNoSteps is returned by [Job.Validate] when the job has no steps.
@@ -27,14 +28,28 @@ type Job struct {
 
 	// Steps are executed in order. Execution stops at the first failed step.
 	Steps []Step
+
+	logger zerolog.Logger
 }
 
 // New creates a new [Job]. It doesn't run until [Job.Run] is called.
-func New(name, cron string, steps []Step) Job {
+//
+// By default the Job discards all log output;
+// See [WithLogger]
+func New(name, cron string, steps []Step, opts ...Option) Job {
+	o := options{
+		logger:   zerolog.Nop(),
+	}
+
+	for _, opt := range opts {
+		opt(&o)
+	}
+
 	return Job{
-		Name:  name,
-		Cron:  cron,
-		Steps: steps,
+		Name:   name,
+		Cron:   cron,
+		Steps:  steps,
+		logger: o.logger,
 	}
 }
 
@@ -48,10 +63,11 @@ func (j Job) Run(ctx context.Context, c rcon.Client) error {
 	for i, step := range j.Steps {
 		switch {
 		case step.Command != "":
-			_, err := c.Execute(ctx, step.Command)
+			response, err := c.Execute(ctx, step.Command)
 			if err != nil {
 				return fmt.Errorf("step %d (%q): %w", i, step.Command, err)
 			}
+			j.logger.Info().Str("response", response).Msg("command send!")
 		case step.Wait > 0:
 			select {
 			case <-time.After(step.Wait):
