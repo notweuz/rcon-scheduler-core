@@ -5,7 +5,7 @@ Customizable using [yaml example config](./configs/core.example.yaml)
 
 ## Docker
 ```sh
-docker pull ghcr.io/notweuz/rcon-scheduler-core:0.4.1
+docker pull ghcr.io/notweuz/rcon-scheduler-core:latest
 ```
 
 ## Go Module
